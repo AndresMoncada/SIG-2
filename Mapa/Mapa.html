@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8" />
+
+<head>
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" />
+	<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
+
+	<!-- Markercluster -->
+	<link rel="stylesheet" href="./MarkerCluster.css" />
+	<link rel="stylesheet" href="./MarkerCluster.Default.css" />
+	<script type="text/javascript" src="./leaflet.markercluster.js"></script>
+
+	<!-- MiniMap -->
+	<link rel="stylesheet" href="./Control.MiniMap.min.css" />
+	<script type="text/javascript" src="./Control.MiniMap.min.js"></script>
+
+
+	<script type="text/javascript"
+		src="countries.js"></script>
+	<script type="text/javascript"
+		src="cities.js"></script>
+	<script type="text/javascript"
+		src="hidro.js"></script>
+	<script type="text/javascript"
+		src="Dep.js"></script>
+
+
+	<!-- Estilo para visualizar en la pagina web -->
+
+	<style>
+		#map {
+			width: 100%;
+			height: 645px;
+			/*box-shadow: 5px 5px 5px #888;
+		}
+	</style>
+
+</head>
+
+<body>
+	<div id="map"></div>
+
+	<script>
+
+		var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'
+
+				+ 'contributors', maxZoom: 18
+
+		});
+
+		var citiesStyle = {
+			'color': "#0CFF00",
+			'weight': 2,
+			'opacity': 0.6
+		};
+
+		var markers = L.markerClusterGroup();
+
+/////////////////////////////////Estilos de departamentos y pais////////////////////////////////////////////
+		function getColor(d) {
+			return d > 100000000 ? '#800026' :
+				d > 50000000 ? '#BD0026' :
+					d > 20000000 ? '#E31A1C' :
+						d > 10000000 ? '#FC4E2A' :
+							d > 5000000 ? '#FD8D3C' :
+								d > 2000000 ? '#FEB24C' :
+									d > 1000000 ? '#FED976' :
+										'#FFEDA0';
+		};
+		function countryStylev2(feature) {
+			return {
+				fillColor: getColor(feature.properties.pop_est),
+				weight: 2,
+				opacity: 1,
+				color: 'white',
+				dashArray: '3',
+				fillOpacity: 0.7
+			};
+		}
+
+		function getColorDep(d) {
+			return d > 45000000000 ? '#00441B' :
+				d > 25000000000 ? '#3DA75A' :
+					d > 20000000000 ? '#B2E0AB' :
+						'#DFFCD5';
+		};
+
+		function DepStyle(feature) {
+			return {
+				fillColor: getColorDep(feature.properties.SHAPE_AREA),
+				weight: 2,
+				opacity: 1,
+				color: 'white',
+				dashArray: '3',
+				fillOpacity: 0.7
+			};
+		}
+/////////////////////////////////////Popup//////////////////////////////////////////
+		function popup(feature, layer) {
+			if (feature.properties && feature.properties.name) {
+				layer.bindPopup(feature.properties.name);
+			}
+		}
+		function popupDep(feature, layer) {
+			if (feature.properties && feature.properties.NOM_DEPART) {
+				layer.bindPopup(feature.properties.NOM_DEPART +'<br>Longitud:'+feature.properties.SHAPE_LEN);
+			}
+		}
+
+
+	var icon_Capital = L.icon({
+                iconUrl: 'https://cdn.icon-icons.com/icons2/865/PNG/512/Citycons_institution_icon-icons.com_67923.png',
+                iconSize: [20, 20],
+                popupAnchor: [-1, -10]
+            });
+
+            var icon_Ciudad = L.icon({
+                iconUrl: 'https://cdn.icon-icons.com/icons2/865/PNG/512/Citycons_location_icon-icons.com_67931.png',
+                iconSize: [20, 20],
+                popupAnchor: [-1, -10]
+            });    
+
+        function estiloMarker(feature, latlng) {
+
+            return feature.properties.capital == 'S' ? markers.addLayer(L.marker(latlng, {
+                icon: icon_Capital,
+                draggable: false,
+                title: "Clic para el Detalle"
+            })):
+                markers.addLayer(L.marker(latlng, {
+                    icon: icon_Ciudad,
+                    draggable: false,
+                    title: "Clic para el Detalle"
+                }));
+        };
+///////////////////////////////Capas//////////////////////////////////////////////////////////
+
+		var map = L.map('map', {
+			center: [1.614433, -75.609455],
+			zoom: 5,
+			layers: [osm],
+			scrollWheelZoom: true
+		});
+
+		var paises = L.geoJson(countries,
+			{
+				style: countryStylev2,
+				onEachFeature: popup
+
+			});
+
+		var departamentos = L.geoJson(Dep,
+			{
+				style: DepStyle,
+				onEachFeature: popupDep
+
+			});
+
+		var ciudades = L.geoJson(cities,
+			{
+				 style: citiesStyle,
+            			pointToLayer: estiloMarker
+
+			});
+
+		paises.addTo(map);
+
+		departamentos.addTo(map);
+
+		ciudades.addTo(map);
+
+		map.addLayer(markers)
+
+
+		L.control.scale({
+			position: 'bottomleft',
+			imperial: false
+		}).addTo(map);
+
+////////////////////////////////////////////////maps///////////////////////////////////////////
+
+		var osm2 = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'
+				+ 'contributors',
+			maxZoom: 18
+		});
+
+		var miniMap = new L.Control.MiniMap(osm2, 
+		{
+			toggleDisplay: true,
+			minimized: false,
+			position: "bottomright"
+		}
+		).addTo(map);
+
+
+
+///////////////////////////////////////////control de capas///////////////////////////////////////////////////
+
+		
+		var baseMaps = {
+			"<img src='https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Openstreetmap_logo.svg/1200px-Openstreetmap_logo.svg.png' height=15px, width=15px /> OSM": osm
+		};
+		var overlayMaps = {
+			"<img src='https://cdn-icons-png.flaticon.com/512/2947/2947656.png' height=15px, width=15px /> Paises": paises,
+			"<img src='https://cdn-icons-png.flaticon.com/512/993/993854.png' height=15px, width=15px /> Departamentos": departamentos,
+			"<img src='https://cdn-icons-png.flaticon.com/512/2942/2942593.png' height=15px, width=15px /> Ciudades": ciudades
+		};
+
+		L.control.layers(baseMaps, overlayMaps, {collapsed: true}).addTo(map);
+
+	</script>
+</body>
+
+</html>
